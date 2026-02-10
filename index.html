@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nokia Snake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="hud">
+      <div class="title">Nokia Snake 🐍</div>
+      <div class="stats">
+        <div><div class="stat-label">Score</div><div class="stat-value" id="score">0</div></div>
+        <div><div class="stat-label">Best score</div><div class="stat-value" id="best">0</div></div>
+        <div><div class="stat-label">Speed</div><div class="stat-value"><span id="speed">0.12</span>s</div></div>
+      </div>
+    </header>
+
+    <section class="game-row">
+      <div class="game-main">
+        <section class="board-wrap">
+          <canvas id="board" width="320" height="320"></canvas>
+          <div class="overlay" id="overlay">
+            <div id="overlay-title">Press Enter to start</div>
+            <div id="overlay-sub">Classic 3310 feel, grid 20×20</div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <section class="legend">
+          <div class="legend-title">Legend</div>
+          <ul class="legend-list">
+            <li><span class="legend-dot yellow"></span>Yellow food: +10</li>
+            <li><span class="legend-dot purple"></span>Purple food: +25</li>
+            <li><span class="legend-dot green"></span>Green food (rare, 5s): +50</li>
+            <li><span class="legend-dot wall"></span>Wall: crash = game over</li>
+            <li><span class="legend-arrow">➡️</span>Controls: arrows/WASD, Space pause, Enter restart</li>
+          </ul>
+        </section>
+
+        <section class="leaderboard">
+          <div class="leaderboard-title">Top 3</div>
+          <ol id="leaderboard-list" class="leaderboard-list">
+            <li>—</li>
+            <li>—</li>
+            <li>—</li>
+          </ol>
+        </section>
+      </aside>
+    </section>
+
+    <div class="modal-backdrop" id="name-modal" aria-hidden="true">
+      <div class="modal">
+        <div class="modal-title">New High Score!</div>
+        <div class="modal-sub">Enter your name (max 12 chars)</div>
+        <input id="name-input" class="modal-input" type="text" maxlength="12" placeholder="Player" />
+        <div class="modal-actions">
+          <button id="name-submit" class="modal-btn">Save</button>
+          <button id="name-cancel" class="modal-btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="snake.js"></script>
+</body>
+</html>
