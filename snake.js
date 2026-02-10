@@ -12,6 +12,8 @@ const nameModal = document.getElementById('name-modal');
 const nameInput = document.getElementById('name-input');
 const nameSubmit = document.getElementById('name-submit');
 const nameCancel = document.getElementById('name-cancel');
+const mobileControls = document.querySelector('.mobile-controls');
+const boardWrap = document.querySelector('.board-wrap');
 
 const SUPABASE_URL = 'https://rkgifqptlnnfxdmnhdul.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrZ2lmcXB0bG5uZnhkbW5oZHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MTUzNzksImV4cCI6MjA4NjI5MTM3OX0.Jf9kfliKPVc0Zt3bEhNVfY9i6EKZvm8Iu8cbxDhfvMc';
@@ -480,6 +482,50 @@ window.addEventListener('keydown', (e) => {
 });
 
 overlay.classList.add('show');
+
+if (mobileControls) {
+  mobileControls.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const dir = btn.dataset.dir;
+    const action = btn.dataset.action;
+    if (dir === 'up') handleDirection({ x: 0, y: -1 });
+    if (dir === 'down') handleDirection({ x: 0, y: 1 });
+    if (dir === 'left') handleDirection({ x: -1, y: 0 });
+    if (dir === 'right') handleDirection({ x: 1, y: 0 });
+    if (action === 'pause') togglePause();
+  });
+}
+
+if (boardWrap) {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchActive = false;
+
+  boardWrap.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    const t = e.touches[0];
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    touchActive = true;
+  }, { passive: true });
+
+  boardWrap.addEventListener('touchmove', (e) => {
+    if (!touchActive) return;
+    if (!e.touches || e.touches.length === 0) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 24) return;
+    touchActive = false;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      handleDirection({ x: dx > 0 ? 1 : -1, y: 0 });
+    } else {
+      handleDirection({ x: 0, y: dy > 0 ? 1 : -1 });
+    }
+  }, { passive: true });
+}
 
 async function fetchLeaderboard() {
   if (!supabaseClient) {
