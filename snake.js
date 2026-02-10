@@ -482,6 +482,12 @@ window.addEventListener('keydown', (e) => {
 });
 
 overlay.classList.add('show');
+overlay.addEventListener('click', () => {
+  if (!running) startGame();
+});
+overlay.addEventListener('touchstart', () => {
+  if (!running) startGame();
+}, { passive: true });
 
 if (mobileControls) {
   mobileControls.addEventListener('click', (e) => {
