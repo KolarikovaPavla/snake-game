@@ -11,70 +11,92 @@
   <link rel="stylesheet" href="combo.css" />
   <link rel="stylesheet" href="sound.css" />
   <link rel="stylesheet" href="game-over.css" />
+  <link rel="stylesheet" href="nokia-shell.css" />
+  <link rel="stylesheet" href="nokia-keypad.css" />
+  <link rel="stylesheet" href="nokia-lcd.css" />
+  <link rel="stylesheet" href="nokia-integration.css" />
 </head>
 <body>
-  <main class="app">
-    <header class="hud">
-      <div class="title-row">
-        <div class="title">Nokia Snake 🐍</div>
-        <div id="sound-controls" aria-label="Sound controls"></div>
-      </div>
-      <div class="stats">
-        <div><div class="stat-label">Score</div><div class="stat-value" id="score">0</div></div>
-        <div><div class="stat-label">Best score</div><div class="stat-value" id="best">0</div></div>
-        <div><div class="stat-label">Speed</div><div class="stat-value"><span id="speed">0.12</span>s</div></div>
-      </div>
-      <div id="combo-controls" class="combo-controls"></div>
-    </header>
+  <main class="app phone-shell">
+    <div class="phone-face">
+      <div class="phone-speaker" aria-hidden="true"></div>
+      <div class="phone-brand">NOKIA</div>
 
-    <section class="game-row">
-      <div class="game-main">
-        <section class="board-wrap">
-          <canvas id="board" width="320" height="320"></canvas>
-          <div class="overlay" id="overlay">
-            <div id="overlay-title">Press Enter or swipe to start</div>
-            <div id="overlay-sub">Tap to start</div>
+      <div class="phone-screen-bezel">
+        <div class="phone-screen">
+          <div class="lcd-statusbar" aria-hidden="true">
+            <span>▮▮▮▯</span>
+            <span id="lcd-clock">00:00</span>
+            <span>▰</span>
           </div>
-        </section>
 
-        <section class="mobile-controls" aria-label="Touch controls">
-          <button class="ctrl-btn up" data-dir="up" aria-label="Up">▲</button>
-          <div class="ctrl-row">
-            <button class="ctrl-btn left" data-dir="left" aria-label="Left">◀</button>
-            <button class="ctrl-btn pause" data-action="pause" aria-label="Pause">⏸</button>
-            <button class="ctrl-btn right" data-dir="right" aria-label="Right">▶</button>
+          <header class="hud">
+            <div class="title-row">
+              <div class="title">SNAKE II</div>
+              <div id="sound-controls" aria-label="Sound controls"></div>
+            </div>
+            <div class="stats">
+              <div><div class="stat-label">Score</div><div class="stat-value" id="score">0</div></div>
+              <div><div class="stat-label">Best</div><div class="stat-value" id="best">0</div></div>
+              <div><div class="stat-label">Speed</div><div class="stat-value"><span id="speed">0.12</span>s</div></div>
+            </div>
+            <div id="combo-controls" class="combo-controls"></div>
+          </header>
+
+          <section class="game-row">
+            <div class="game-main">
+              <section class="board-wrap">
+                <canvas id="board" width="320" height="320"></canvas>
+                <div class="overlay" id="overlay">
+                  <div id="overlay-title">Press NAVI to start</div>
+                  <div id="overlay-sub">Use 2 · 4 · 6 · 8 to move</div>
+                </div>
+              </section>
+            </div>
+
+            <aside class="sidebar" id="phone-menu" aria-hidden="true">
+              <div class="phone-menu-title">
+                <span>OPTIONS</span>
+                <button id="phone-menu-close" type="button" aria-label="Close phone menu">C</button>
+              </div>
+              <section class="legend">
+                <div class="legend-title">How to play</div>
+                <ul class="legend-list">
+                  <li><span class="legend-dot yellow"></span>Food: +10</li>
+                  <li><span class="legend-dot purple"></span>Special food: +25</li>
+                  <li><span class="legend-dot green"></span>Rare food: +50</li>
+                  <li><span class="legend-arrow">⚡</span>Chain food for up to ×5</li>
+                  <li><span class="legend-dot wall"></span>Wall: game over</li>
+                  <li><span class="legend-arrow">⌨</span>2 · 4 · 6 · 8 move, 5 selects</li>
+                </ul>
+              </section>
+
+              <section class="leaderboard">
+                <div class="leaderboard-title">High scores</div>
+                <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">
+                  Loading scores…
+                </div>
+                <ol id="leaderboard-list" class="leaderboard-list">
+                  <li>—</li>
+                  <li>—</li>
+                  <li>—</li>
+                </ol>
+              </section>
+            </aside>
+          </section>
+
+          <div class="lcd-softkeys" aria-hidden="true">
+            <span>Menu</span>
+            <span>Navi</span>
+            <span>Back</span>
           </div>
-          <button class="ctrl-btn down" data-dir="down" aria-label="Down">▼</button>
-        </section>
+        </div>
       </div>
 
-      <aside class="sidebar">
-        <section class="legend">
-          <div class="legend-title">Legend</div>
-          <ul class="legend-list">
-            <li><span class="legend-dot yellow"></span>Yellow food: +10</li>
-            <li><span class="legend-dot purple"></span>Purple food: +25</li>
-            <li><span class="legend-dot green"></span>Green food (rare, 5s): +50</li>
-            <li><span class="legend-arrow">⚡</span>Chain food within 3.2s for up to ×5</li>
-            <li><span class="legend-dot wall"></span>Wall: crash = game over</li>
-            <li><span class="legend-arrow">➡️</span>Controls: Arrow keys, Space pause, Enter restart</li>
-            <li><span class="legend-arrow">📱</span>Mobile: swipe on the game board to move, tap the board to start</li>
-          </ul>
-        </section>
-
-        <section class="leaderboard">
-          <div class="leaderboard-title">Top 3</div>
-          <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">
-            Loading scores…
-          </div>
-          <ol id="leaderboard-list" class="leaderboard-list">
-            <li>—</li>
-            <li>—</li>
-            <li>—</li>
-          </ol>
-        </section>
-      </aside>
-    </section>
+      <div class="phone-lower">
+        <div id="nokia-keypad"></div>
+      </div>
+    </div>
 
     <div class="modal-backdrop" id="name-modal" aria-hidden="true">
       <div class="modal">
@@ -93,6 +115,7 @@
   <script src="combo.js"></script>
   <script src="sound.js"></script>
   <script src="game-over.js"></script>
+  <script src="nokia-keypad.js"></script>
   <script src="snake.js"></script>
 </body>
 </html>
