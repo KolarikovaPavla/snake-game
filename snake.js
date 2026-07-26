@@ -19,6 +19,11 @@ const soundControls = document.getElementById('sound-controls');
 const comboControls = document.getElementById('combo-controls');
 const phoneMenu = document.getElementById('phone-menu');
 const phoneMenuClose = document.getElementById('phone-menu-close');
+const phoneMenuHeading = document.getElementById('phone-menu-heading');
+const phoneMenuHome = document.getElementById('phone-menu-home');
+const phoneMenuHelp = document.getElementById('phone-menu-help');
+const phoneMenuHighScores = document.getElementById('phone-menu-high-scores');
+const phoneMenuItems = Array.from(document.querySelectorAll('.phone-menu-item'));
 const nokiaKeypadHost = document.getElementById('nokia-keypad');
 const lcdClock = document.getElementById('lcd-clock');
 const phoneStage = document.querySelector('.phone-stage');
@@ -101,6 +106,8 @@ let totalPausedMs = 0;
 let lastComboMultiplier = 1;
 let phoneMenuOpen = false;
 let menuPausedGame = false;
+let phoneMenuView = 'home';
+let phoneMenuSelection = 0;
 let phoneKeypad = null;
 let obstacles = [];
 const maxObstacles = 4;
@@ -121,7 +128,11 @@ const gameOverScreen = new window.GameOverScreen(document.body, {
 phoneKeypad = window.NokiaKeypad.mount(nokiaKeypadHost, {
   getState: () => ({ running, paused, gameOver }),
   onDirection: (nextDirection) => {
-    if (phoneMenuOpen) return;
+    if (phoneMenuOpen) {
+      if (nextDirection === 'up') movePhoneMenuSelection(-1);
+      if (nextDirection === 'down') movePhoneMenuSelection(1);
+      return;
+    }
     const directions = {
       up: { x: 0, y: -1 },
       down: { x: 0, y: 1 },
@@ -131,21 +142,32 @@ phoneKeypad = window.NokiaKeypad.mount(nokiaKeypadHost, {
     handleDirection(directions[nextDirection]);
   },
   onStart: () => {
+    if (phoneMenuOpen) {
+      activatePhoneMenuSelection();
+      return;
+    }
     setPhoneMenu(false);
     startGame();
   },
   onPause: () => {
     if (phoneMenuOpen) {
-      setPhoneMenu(false);
+      activatePhoneMenuSelection();
       return;
     }
     togglePause();
   },
   onMenu: () => setPhoneMenu(!phoneMenuOpen),
-  onBack: () => setPhoneMenu(false),
+  onBack: () => handlePhoneMenuBack(),
 });
 
-phoneMenuClose.addEventListener('click', () => setPhoneMenu(false));
+phoneMenuClose.addEventListener('click', handlePhoneMenuBack);
+phoneMenuItems.forEach((item) => {
+  item.addEventListener('click', () => {
+    phoneMenuSelection = availablePhoneMenuItems().indexOf(item);
+    renderPhoneMenuSelection();
+    activatePhoneMenuSelection();
+  });
+});
 
 function updateLcdClock() {
   const now = new Date();
@@ -163,6 +185,92 @@ function syncPhoneKeypad() {
   }
 }
 
+function availablePhoneMenuItems() {
+  return phoneMenuItems.filter((item) => !item.disabled && !item.hidden);
+}
+
+function renderPhoneMenuSelection() {
+  const availableItems = availablePhoneMenuItems();
+  if (!availableItems.length) return;
+
+  phoneMenuSelection = Math.max(0, Math.min(phoneMenuSelection, availableItems.length - 1));
+  availableItems.forEach((item, index) => {
+    const selected = index === phoneMenuSelection;
+    item.classList.toggle('is-selected', selected);
+    item.setAttribute('aria-current', selected ? 'true' : 'false');
+  });
+}
+
+function showPhoneMenuPage(view) {
+  phoneMenuView = view;
+  const pages = {
+    home: phoneMenuHome,
+    help: phoneMenuHelp,
+    'high-scores': phoneMenuHighScores,
+  };
+
+  Object.entries(pages).forEach(([name, page]) => {
+    if (!page) return;
+    const active = name === view;
+    page.hidden = !active;
+    page.classList.toggle('is-active', active);
+  });
+
+  phoneMenuHeading.textContent =
+    view === 'high-scores' ? 'SCORES' : view === 'help' ? 'HELP' : 'MENU';
+
+  if (view === 'home') {
+    const resumeItem = phoneMenuItems.find(
+      (item) => item.dataset.phoneMenuAction === 'resume'
+    );
+    if (resumeItem) resumeItem.disabled = !running || gameOver;
+    phoneMenuSelection = 0;
+    renderPhoneMenuSelection();
+  }
+}
+
+function movePhoneMenuSelection(delta) {
+  if (phoneMenuView !== 'home') return;
+  const availableItems = availablePhoneMenuItems();
+  if (!availableItems.length) return;
+  phoneMenuSelection =
+    (phoneMenuSelection + delta + availableItems.length) % availableItems.length;
+  renderPhoneMenuSelection();
+}
+
+function activatePhoneMenuSelection() {
+  if (phoneMenuView !== 'home') {
+    showPhoneMenuPage('home');
+    return;
+  }
+
+  const item = availablePhoneMenuItems()[phoneMenuSelection];
+  const action = item?.dataset.phoneMenuAction;
+  if (!action) return;
+
+  if (action === 'resume') {
+    setPhoneMenu(false);
+  } else if (action === 'new-game') {
+    setPhoneMenu(false);
+    startGame();
+  } else if (action === 'high-scores') {
+    showPhoneMenuPage('high-scores');
+  } else if (action === 'help') {
+    showPhoneMenuPage('help');
+  } else if (action === 'sound') {
+    soundControls.querySelector('button')?.click();
+  }
+}
+
+function handlePhoneMenuBack() {
+  if (!phoneMenuOpen) return;
+  if (phoneMenuView !== 'home') {
+    showPhoneMenuPage('home');
+  } else {
+    setPhoneMenu(false);
+  }
+}
+
 function setPhoneMenu(open) {
   const shouldOpen = Boolean(open);
   if (shouldOpen === phoneMenuOpen) return;
@@ -175,6 +283,7 @@ function setPhoneMenu(open) {
   phoneMenuOpen = shouldOpen;
   phoneMenu.classList.toggle('is-open', phoneMenuOpen);
   phoneMenu.setAttribute('aria-hidden', String(!phoneMenuOpen));
+  if (phoneMenuOpen) showPhoneMenuPage('home');
 
   if (!phoneMenuOpen && menuPausedGame && running && paused && !gameOver) {
     menuPausedGame = false;
@@ -569,17 +678,9 @@ async function finalizeGameOver(stats) {
   }
 
   overlay.classList.remove('show');
-  gameOverScreen.show({
-    score: stats.score,
-    bestScore: stats.previousBest,
-    isNewBest: stats.isNewBest,
-    maxCombo: stats.maxCombo,
-    foodEaten: stats.foodEaten,
-    durationMs: stats.durationMs,
-    leaderboardStatus,
-    rank: leaderboardResult.rank,
-    shareUrl: `${location.origin}${location.pathname}`,
-  });
+  overlayTitle.textContent = stats.isNewBest ? 'NEW BEST!' : 'GAME OVER';
+  overlaySub.textContent = `SCORE ${stats.score} · NAVI AGAIN`;
+  overlay.classList.add('show');
 }
 
 function render() {
@@ -669,7 +770,16 @@ window.addEventListener('keydown', (e) => {
   if (phoneMenuOpen) {
     if (e.key === 'Escape' || e.key === 'Backspace') {
       e.preventDefault();
-      setPhoneMenu(false);
+      handlePhoneMenuBack();
+    } else if (e.key === 'ArrowUp' || e.key === '2') {
+      e.preventDefault();
+      movePhoneMenuSelection(-1);
+    } else if (e.key === 'ArrowDown' || e.key === '8') {
+      e.preventDefault();
+      movePhoneMenuSelection(1);
+    } else if (e.key === 'Enter' || e.key === '5') {
+      e.preventDefault();
+      activatePhoneMenuSelection();
     }
     return;
   }
