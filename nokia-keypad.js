@@ -126,21 +126,21 @@
     [
       {
         action: 'menu',
-        label: 'MENU',
-        hint: 'start',
+        label: 'C',
+        hint: 'menu',
         className: 'nk-key--soft nk-key--menu',
         ariaLabel: 'Menu or start game'
       },
       {
         action: 'primary',
-        label: 'NAVI',
+        label: '',
         hint: 'select',
         className: 'nk-key--navi',
         ariaLabel: 'Navi: start or pause game'
       },
       {
         action: 'back',
-        label: 'C',
+        label: '↶',
         hint: 'back',
         className: 'nk-key--soft nk-key--back',
         ariaLabel: 'Back'
