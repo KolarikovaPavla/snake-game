@@ -17,8 +17,9 @@
   <link rel="stylesheet" href="nokia-integration.css" />
 </head>
 <body>
-  <main class="app phone-shell">
-    <div class="phone-face">
+  <div class="phone-stage">
+    <main class="app phone-shell">
+      <div class="phone-face">
       <div class="phone-speaker" aria-hidden="true"></div>
       <div class="phone-brand">NOKIA</div>
 
@@ -93,23 +94,24 @@
         </div>
       </div>
 
-      <div class="phone-lower">
-        <div id="nokia-keypad"></div>
-      </div>
-    </div>
-
-    <div class="modal-backdrop" id="name-modal" aria-hidden="true">
-      <div class="modal">
-        <div class="modal-title">New High Score!</div>
-        <div class="modal-sub">Enter your name (max 12 chars)</div>
-        <input id="name-input" class="modal-input" type="text" maxlength="12" placeholder="Player" />
-        <div class="modal-actions">
-          <button id="name-submit" class="modal-btn">Save</button>
-          <button id="name-cancel" class="modal-btn ghost">Cancel</button>
+        <div class="phone-lower">
+          <div id="nokia-keypad"></div>
         </div>
       </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="name-modal" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-title">New High Score!</div>
+      <div class="modal-sub">Enter your name (max 12 chars)</div>
+      <input id="name-input" class="modal-input" type="text" maxlength="12" placeholder="Player" />
+      <div class="modal-actions">
+        <button id="name-submit" class="modal-btn">Save</button>
+        <button id="name-cancel" class="modal-btn ghost">Cancel</button>
+      </div>
     </div>
-  </main>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="combo.js"></script>
