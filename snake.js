@@ -17,6 +17,10 @@ const mobileControls = document.querySelector('.mobile-controls');
 const boardWrap = document.querySelector('.board-wrap');
 const soundControls = document.getElementById('sound-controls');
 const comboControls = document.getElementById('combo-controls');
+const phoneMenu = document.getElementById('phone-menu');
+const phoneMenuClose = document.getElementById('phone-menu-close');
+const nokiaKeypadHost = document.getElementById('nokia-keypad');
+const lcdClock = document.getElementById('lcd-clock');
 
 const sound = window.SnakeSound;
 sound.createControl(soundControls);
@@ -64,6 +68,9 @@ let runStartedAt = 0;
 let pauseStartedAt = 0;
 let totalPausedMs = 0;
 let lastComboMultiplier = 1;
+let phoneMenuOpen = false;
+let menuPausedGame = false;
+let phoneKeypad = null;
 let obstacles = [];
 const maxObstacles = 4;
 let wallSpawnCooldown = 12;
@@ -80,6 +87,72 @@ const gameOverScreen = new window.GameOverScreen(document.body, {
   },
 });
 
+phoneKeypad = window.NokiaKeypad.mount(nokiaKeypadHost, {
+  getState: () => ({ running, paused, gameOver }),
+  onDirection: (nextDirection) => {
+    if (phoneMenuOpen) return;
+    const directions = {
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 },
+    };
+    handleDirection(directions[nextDirection]);
+  },
+  onStart: () => {
+    setPhoneMenu(false);
+    startGame();
+  },
+  onPause: () => {
+    if (phoneMenuOpen) {
+      setPhoneMenu(false);
+      return;
+    }
+    togglePause();
+  },
+  onMenu: () => setPhoneMenu(!phoneMenuOpen),
+  onBack: () => setPhoneMenu(false),
+});
+
+phoneMenuClose.addEventListener('click', () => setPhoneMenu(false));
+
+function updateLcdClock() {
+  const now = new Date();
+  lcdClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(
+    now.getMinutes()
+  ).padStart(2, '0')}`;
+}
+
+updateLcdClock();
+window.setInterval(updateLcdClock, 30000);
+
+function syncPhoneKeypad() {
+  if (phoneKeypad) {
+    phoneKeypad.setState({ running, paused, gameOver });
+  }
+}
+
+function setPhoneMenu(open) {
+  const shouldOpen = Boolean(open);
+  if (shouldOpen === phoneMenuOpen) return;
+
+  if (shouldOpen && running && !paused && !gameOver) {
+    menuPausedGame = true;
+    togglePause();
+  }
+
+  phoneMenuOpen = shouldOpen;
+  phoneMenu.classList.toggle('is-open', phoneMenuOpen);
+  phoneMenu.setAttribute('aria-hidden', String(!phoneMenuOpen));
+
+  if (!phoneMenuOpen && menuPausedGame && running && paused && !gameOver) {
+    menuPausedGame = false;
+    togglePause();
+  } else if (!phoneMenuOpen) {
+    menuPausedGame = false;
+  }
+}
+
 bestEl.textContent = best;
 
 function resetGame() {
@@ -92,7 +165,7 @@ function resetGame() {
   obstacles = [];
   wallSpawnCooldown = 12;
   bonusFood = null;
-  scheduleBonusSpawn(0);
+  scheduleBonusSpawn(now);
   direction = { x: 1, y: 0 };
   pendingDir = { x: 1, y: 0 };
   score = 0;
@@ -108,6 +181,8 @@ function resetGame() {
   gameOverScreen.hide({ restoreFocus: false });
   gameOver = false;
   paused = false;
+  setPhoneMenu(false);
+  syncPhoneKeypad();
   overlay.classList.remove('show');
 }
 
@@ -192,9 +267,9 @@ function isWallSpotFree(x, y, length, horizontal, occupied) {
 }
 
 function drawGrid() {
-  ctx.fillStyle = '#0a0e11';
+  ctx.fillStyle = '#a9b978';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = '#161c22';
+  ctx.strokeStyle = 'rgba(23, 38, 25, 0.12)';
   ctx.lineWidth = 1;
 
   for (let i = 0; i <= gridSize; i += 1) {
@@ -212,12 +287,12 @@ function drawGrid() {
 }
 
 function drawObstacles() {
-  ctx.fillStyle = '#46515b';
+  ctx.fillStyle = '#596b4c';
   obstacles.forEach((wall) => {
     wall.cells.forEach((o) => {
       const x = o.x * cellSize;
       const y = o.y * cellSize;
-      ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+      ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
     });
   });
 }
@@ -230,44 +305,21 @@ function drawSnake() {
     const inset = cellSize * 0.08;
     const size = cellSize - inset * 2;
 
-    const grad = ctx.createRadialGradient(
-      x + cellSize * 0.35,
-      y + cellSize * 0.35,
-      cellSize * 0.1,
-      x + cellSize * 0.6,
-      y + cellSize * 0.6,
-      cellSize * 0.7
+    ctx.fillStyle = isHead ? '#102116' : '#1d301d';
+    ctx.fillRect(
+      Math.round(x + inset),
+      Math.round(y + inset),
+      Math.round(size),
+      Math.round(size)
     );
-
-    if (isHead) {
-      grad.addColorStop(0, '#8df5b2');
-      grad.addColorStop(0.5, '#43cc78');
-      grad.addColorStop(1, '#1f7a45');
-    } else {
-      grad.addColorStop(0, '#6feaa2');
-      grad.addColorStop(0.6, '#2fb56b');
-      grad.addColorStop(1, '#1a6b3b');
-    }
-
-    ctx.fillStyle = grad;
-    ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    ctx.shadowBlur = cellSize * 0.15;
-    ctx.shadowOffsetY = cellSize * 0.05;
-    roundRect(x + inset, y + inset, size, size, cellSize * 0.25);
-    ctx.fill();
-    ctx.shadowBlur = 0;
 
     if (isHead) {
       const eyeSize = cellSize * 0.18;
       const eyeOffsetX = direction.x === -1 ? cellSize * 0.25 : cellSize * 0.62;
       const eyeOffsetY = direction.y === -1 ? cellSize * 0.25 : cellSize * 0.62;
-      ctx.fillStyle = '#0a0f12';
+      ctx.fillStyle = '#a9b978';
       ctx.beginPath();
-      ctx.arc(x + eyeOffsetX, y + eyeOffsetY, eyeSize * 0.45, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#d7f7ff';
-      ctx.beginPath();
-      ctx.arc(x + eyeOffsetX - eyeSize * 0.12, y + eyeOffsetY - eyeSize * 0.12, eyeSize * 0.18, 0, Math.PI * 2);
+      ctx.arc(x + eyeOffsetX, y + eyeOffsetY, eyeSize * 0.38, 0, Math.PI * 2);
       ctx.fill();
     }
   });
@@ -277,23 +329,19 @@ function drawFood() {
   const cx = food.x * cellSize + cellSize / 2;
   const cy = food.y * cellSize + cellSize / 2;
   const r = cellSize * 0.34;
-  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.2, cx, cy, r);
+  ctx.save();
+  ctx.translate(Math.round(cx), Math.round(cy));
+  ctx.fillStyle = '#172619';
+
   if (food.type === 'purple') {
-    grad.addColorStop(0, '#f3c3ff');
-    grad.addColorStop(0.6, '#b06bff');
-    grad.addColorStop(1, '#6b2bc5');
+    ctx.rotate(Math.PI / 4);
+    ctx.fillRect(-r * 0.72, -r * 0.72, r * 1.44, r * 1.44);
+    ctx.fillStyle = '#a9b978';
+    ctx.fillRect(-r * 0.25, -r * 0.25, r * 0.5, r * 0.5);
   } else {
-    grad.addColorStop(0, '#fff2b1');
-    grad.addColorStop(0.6, '#f2d06b');
-    grad.addColorStop(1, '#c59b2d');
+    ctx.fillRect(-r * 0.75, -r * 0.75, r * 1.5, r * 1.5);
   }
-  ctx.fillStyle = grad;
-  ctx.shadowColor = 'rgba(0,0,0,0.25)';
-  ctx.shadowBlur = r * 0.6;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.restore();
 }
 
 function drawBonusFood() {
@@ -301,17 +349,12 @@ function drawBonusFood() {
   const cx = bonusFood.x * cellSize + cellSize / 2;
   const cy = bonusFood.y * cellSize + cellSize / 2;
   const r = cellSize * 0.34;
-  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.2, cx, cy, r);
-  grad.addColorStop(0, '#c8ffd9');
-  grad.addColorStop(0.6, '#6eea8d');
-  grad.addColorStop(1, '#1f8b49');
-  ctx.fillStyle = grad;
-  ctx.shadowColor = 'rgba(0,0,0,0.25)';
-  ctx.shadowBlur = r * 0.6;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#172619';
+  ctx.fillRect(cx - r * 0.25, cy - r, r * 0.5, r * 2);
+  ctx.fillRect(cx - r, cy - r * 0.25, r * 2, r * 0.5);
+  ctx.strokeStyle = '#172619';
+  ctx.lineWidth = Math.max(1, cellSize * 0.08);
+  ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
 }
 
 function roundRect(x, y, w, h, r) {
@@ -345,7 +388,7 @@ function addPopup(points, x, y, color) {
     y: y * cellSize + cellSize / 2,
     vy: cellSize * 0.02,
     alpha: 1,
-    color: color || '#ffe8a0',
+    color: color || '#172619',
   });
 }
 
@@ -389,7 +432,7 @@ function step() {
       award.totalPoints,
       head.x,
       head.y,
-      food.type === 'purple' ? '#d8a6ff' : '#ffe8a0'
+      '#172619'
     );
     sound.food(food.type);
     if (award.multiplier > lastComboMultiplier) {
@@ -408,7 +451,7 @@ function step() {
     const award = combo.registerFood('bonus', 50, performance.now());
     score += award.totalPoints;
     scoreEl.textContent = score;
-    addPopup(award.totalPoints, head.x, head.y, '#b9ffd0');
+    addPopup(award.totalPoints, head.x, head.y, '#172619');
     sound.food('green');
     if (award.multiplier > lastComboMultiplier) {
       sound.combo(award.multiplier);
@@ -438,6 +481,9 @@ function endGame() {
 
   running = false;
   gameOver = true;
+  menuPausedGame = false;
+  setPhoneMenu(false);
+  syncPhoneKeypad();
   finalizingRun = true;
 
   const previousBest = best;
@@ -549,6 +595,7 @@ function startGame() {
 
   resetGame();
   running = true;
+  syncPhoneKeypad();
   sound.start();
   lastStep = 0;
   overlayTitle.textContent = '';
@@ -574,6 +621,7 @@ function togglePause() {
   overlayTitle.textContent = paused ? 'Paused' : '';
   overlaySub.textContent = paused ? 'Press Space to resume' : '';
   overlay.classList.toggle('show', paused);
+  syncPhoneKeypad();
 }
 
 function handleDirection(newDir) {
@@ -586,6 +634,20 @@ function handleDirection(newDir) {
 window.addEventListener('keydown', (e) => {
   if (nameModal && nameModal.classList.contains('show')) return;
   if (gameOverScreen.isOpen()) return;
+
+  if (phoneMenuOpen) {
+    if (e.key === 'Escape' || e.key === 'Backspace') {
+      e.preventDefault();
+      setPhoneMenu(false);
+    }
+    return;
+  }
+
+  if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    setPhoneMenu(true);
+    return;
+  }
 
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
     e.preventDefault();
@@ -601,14 +663,32 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
     handleDirection({ x: 0, y: -1 });
   }
+  if (e.key === '2') {
+    handleDirection({ x: 0, y: -1 });
+  }
   if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+    handleDirection({ x: 0, y: 1 });
+  }
+  if (e.key === '8') {
     handleDirection({ x: 0, y: 1 });
   }
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
     handleDirection({ x: -1, y: 0 });
   }
+  if (e.key === '4') {
+    handleDirection({ x: -1, y: 0 });
+  }
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
     handleDirection({ x: 1, y: 0 });
+  }
+  if (e.key === '6') {
+    handleDirection({ x: 1, y: 0 });
+  }
+  if (e.key === '5') {
+    running && !gameOver ? togglePause() : startGame();
+  }
+  if (e.key === '0') {
+    togglePause();
   }
 });
 
@@ -787,7 +867,8 @@ function escapeHtml(value) {
 fetchLeaderboard();
 
 function resizeBoard() {
-  const maxSize = Math.min(window.innerWidth * 0.92, 420);
+  const availableWidth = boardWrap ? boardWrap.clientWidth : window.innerWidth * 0.92;
+  const maxSize = Math.min(availableWidth, 420);
   const size = Math.floor(maxSize / gridSize) * gridSize;
   canvas.width = size;
   canvas.height = size;
