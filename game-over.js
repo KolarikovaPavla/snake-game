@@ -101,7 +101,7 @@
           <header class="gos-header">
             <span class="gos-snake-mark" aria-hidden="true">●■▪</span>
             <h2 class="gos-title" id="gos-title">GAME OVER</h2>
-            <p class="gos-summary" id="gos-summary">Nice run. The grid is ready for another.</p>
+            <p class="gos-summary" id="gos-summary">The snake has left the chat. Rematch?</p>
           </header>
 
           <div class="gos-score-card">
@@ -250,7 +250,7 @@
       title.textContent = isNewBest ? 'NEW BEST!' : 'GAME OVER';
       summary.textContent = isNewBest
         ? 'A new personal record. That one deserves another run.'
-        : (this.stats.message || 'Nice run. The grid is ready for another.');
+        : (this.stats.message || 'The snake has left the chat. Rematch?');
     }
 
     getLeaderboardMessage() {
