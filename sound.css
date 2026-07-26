@@ -1,0 +1,79 @@
+.sound-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #34414e;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1b252d 0%, #0d1318 100%);
+  color: #dce9f7;
+  font: 600 9px/1 'IBM Plex Mono', 'Courier New', monospace;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 3px 10px rgba(0, 0, 0, 0.2);
+  transition:
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+  touch-action: manipulation;
+}
+
+.sound-toggle:hover:not(:disabled) {
+  border-color: #5d7da0;
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 12px rgba(122, 162, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.sound-toggle:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 3px;
+}
+
+.sound-toggle.is-muted {
+  color: #8b98a3;
+  border-color: #2a343d;
+}
+
+.sound-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sound-toggle__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: #7be2a0;
+  font-size: 15px;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(77, 208, 127, 0.34);
+}
+
+.sound-toggle.is-muted .sound-toggle__icon {
+  color: #76828c;
+  text-shadow: none;
+}
+
+.sound-toggle__label {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-toggle {
+    transition: none;
+  }
+}
