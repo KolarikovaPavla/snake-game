@@ -1,0 +1,258 @@
+/*
+ * Final layout glue for the Nokia 3310 handset experience.
+ * Loaded after the standalone shell, keypad, and LCD theme layers.
+ */
+
+body {
+  padding: 18px 0 42px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(72, 94, 111, 0.28), transparent 34%),
+    linear-gradient(180deg, #111a21, #05080a 78%);
+}
+
+.app.phone-shell {
+  width: min(96vw, 440px);
+}
+
+.phone-face {
+  padding-inline: clamp(18px, 6vw, 30px);
+}
+
+.phone-screen {
+  padding: 8px;
+}
+
+.phone-screen .lcd-statusbar {
+  margin: -1px -1px 6px;
+}
+
+.phone-screen .title {
+  padding-inline: 46px;
+}
+
+.phone-screen .sound-toggle {
+  min-height: 26px;
+  padding: 4px 7px;
+  border: 1px solid var(--lcd-ink);
+  border-radius: 2px;
+  color: var(--lcd-ink);
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-screen .sound-toggle__label {
+  display: none;
+}
+
+.phone-screen .sound-toggle__icon {
+  width: 14px;
+  height: 14px;
+  color: var(--lcd-ink);
+  font-size: 13px;
+  text-shadow: none;
+}
+
+.phone-screen .game-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: 7px;
+}
+
+.phone-screen .game-main {
+  min-width: 0;
+  gap: 0;
+}
+
+.phone-screen .board-wrap {
+  width: 100%;
+  max-width: 300px;
+  margin-inline: auto;
+}
+
+.phone-screen #board {
+  width: 100%;
+  height: auto;
+  filter: none;
+}
+
+.phone-screen .combo-hud {
+  width: 100%;
+  max-width: none;
+  padding: 6px 8px 7px;
+}
+
+.lcd-softkeys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 3px 1px;
+  border-top: 2px solid var(--lcd-ink);
+  color: var(--lcd-ink);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.phone-screen .sidebar {
+  position: absolute;
+  inset: 23px 8px 27px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 3px double var(--lcd-ink);
+  border-radius: 2px;
+  color: var(--lcd-ink);
+  background: var(--lcd-glass);
+  box-shadow: 5px 6px 0 rgba(23, 38, 25, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+}
+
+.phone-screen .sidebar.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.phone-menu-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--lcd-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+}
+
+#phone-menu-close {
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid var(--lcd-ink);
+  border-radius: 1px;
+  color: var(--lcd-ink);
+  background: var(--lcd-glass-light);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.phone-screen .sidebar .legend,
+.phone-screen .sidebar .leaderboard {
+  flex: none;
+  min-height: 0;
+  margin: 0;
+  padding: 7px;
+  background: rgba(169, 185, 120, 0.74);
+}
+
+.phone-screen .sidebar .legend-list {
+  gap: 6px;
+  font-size: 9px;
+}
+
+.phone-screen .sidebar .leaderboard {
+  flex: none;
+}
+
+.phone-shell .mobile-controls {
+  display: none !important;
+}
+
+.phone-shell .nk-keypad {
+  width: min(100%, 300px);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-shell .nk-keypad::before,
+.phone-shell .nk-keypad::after,
+.phone-shell .nk-keypad__speaker,
+.phone-shell .nk-keypad__brand {
+  display: none;
+}
+
+.phone-shell .nk-keypad__help {
+  color: rgba(228, 238, 244, 0.76);
+}
+
+.phone-shell .nk-keypad__help b {
+  color: #edf3d2;
+}
+
+.phone-shell .phone-lower {
+  width: min(100%, 320px);
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-top: 6px;
+  }
+
+  .app.phone-shell {
+    width: min(calc(100% - 10px), 440px);
+  }
+
+  .phone-face {
+    padding-inline: 12px;
+  }
+
+  .phone-screen {
+    padding: 6px;
+  }
+
+  .phone-screen .title {
+    padding-inline: 42px;
+    text-align: center;
+  }
+
+  .phone-screen .sidebar {
+    inset: 21px 6px 25px;
+  }
+
+  .phone-screen .board-wrap {
+    max-width: min(100%, 300px);
+  }
+}
+
+@media (max-width: 390px) {
+  body {
+    padding: 0 0 22px;
+  }
+
+  .app.phone-shell {
+    width: 100%;
+  }
+
+  .phone-face {
+    padding-inline: 7px;
+  }
+
+  .phone-screen-bezel {
+    padding: 6px;
+  }
+
+  .phone-screen .stats > div {
+    padding-inline: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone-screen .sidebar {
+    transition: none;
+  }
+}
