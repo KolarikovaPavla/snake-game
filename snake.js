@@ -8,6 +8,7 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlaySub = document.getElementById('overlay-sub');
 const leaderboardList = document.getElementById('leaderboard-list');
+const leaderboardStatus = document.getElementById('leaderboard-status');
 const nameModal = document.getElementById('name-modal');
 const nameInput = document.getElementById('name-input');
 const nameSubmit = document.getElementById('name-submit');
@@ -46,6 +47,8 @@ let score = 0;
 let best = Number(localStorage.getItem('snake_best') || 0);
 let popups = [];
 let topScores = [];
+let leaderboardAvailable = false;
+let scoreSubmissionInProgress = false;
 let obstacles = [];
 const maxObstacles = 4;
 let wallSpawnCooldown = 12;
@@ -390,7 +393,7 @@ function endGame() {
     localStorage.setItem('snake_best', best);
     bestEl.textContent = best;
   }
-  maybeSubmitLeaderboardScore();
+  maybeSubmitLeaderboardScore(score);
   overlayTitle.textContent = 'Game Over';
   overlaySub.textContent = 'Press Enter to play again';
   overlay.classList.add('show');
@@ -456,6 +459,8 @@ function handleDirection(newDir) {
 }
 
 window.addEventListener('keydown', (e) => {
+  if (nameModal && nameModal.classList.contains('show')) return;
+
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
     e.preventDefault();
   }
@@ -536,19 +541,31 @@ if (boardWrap) {
 async function fetchLeaderboard() {
   if (!supabaseClient) {
     console.warn('Supabase not ready. Check URL/key.');
-    return;
+    showLeaderboardUnavailable();
+    return false;
   }
-  const { data, error } = await supabaseClient
-    .from('scores')
-    .select('name, score')
-    .order('score', { ascending: false })
-    .limit(3);
-  if (error) {
+
+  setLeaderboardStatus('Loading scores…');
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('scores')
+      .select('name, score')
+      .order('score', { ascending: false })
+      .limit(3);
+
+    if (error) throw error;
+
+    topScores = data || [];
+    leaderboardAvailable = true;
+    setLeaderboardStatus(topScores.length ? '' : 'No scores yet — be the first!');
+    renderLeaderboard();
+    return true;
+  } catch (error) {
     console.error('Supabase fetch error:', error);
-    return;
+    showLeaderboardUnavailable();
+    return false;
   }
-  topScores = data || [];
-  renderLeaderboard();
 }
 
 function renderLeaderboard() {
@@ -559,23 +576,52 @@ function renderLeaderboard() {
   leaderboardList.innerHTML = rows.join('');
 }
 
-function qualifiesForLeaderboard() {
-  if (topScores.length < 3) return true;
-  return score > topScores[topScores.length - 1].score;
+function setLeaderboardStatus(message, isError = false) {
+  if (!leaderboardStatus) return;
+  leaderboardStatus.textContent = message;
+  leaderboardStatus.classList.toggle('error', isError);
 }
 
-async function maybeSubmitLeaderboardScore() {
-  if (!supabaseClient) return;
-  await fetchLeaderboard();
-  if (!qualifiesForLeaderboard()) return;
-  const name = await promptName();
-  const cleanName = name.trim().slice(0, 12) || 'Player';
-  const { error } = await supabaseClient.from('scores').insert({ name: cleanName, score });
-  if (error) {
-    console.error('Supabase insert error:', error);
-    return;
+function showLeaderboardUnavailable() {
+  leaderboardAvailable = false;
+  topScores = [];
+  setLeaderboardStatus('Leaderboard temporarily unavailable', true);
+  renderLeaderboard();
+}
+
+function qualifiesForLeaderboard(candidateScore) {
+  if (!leaderboardAvailable) return false;
+  if (topScores.length < 3) return true;
+  return candidateScore > topScores[topScores.length - 1].score;
+}
+
+async function maybeSubmitLeaderboardScore(finalScore) {
+  if (!supabaseClient || scoreSubmissionInProgress || finalScore <= 0) return;
+
+  scoreSubmissionInProgress = true;
+
+  try {
+    const leaderboardLoaded = await fetchLeaderboard();
+    if (!leaderboardLoaded || !qualifiesForLeaderboard(finalScore)) return;
+
+    const name = await promptName();
+    if (name === null) return;
+
+    const cleanName = name.trim().slice(0, 12) || 'Player';
+    const { error } = await supabaseClient
+      .from('scores')
+      .insert({ name: cleanName, score: finalScore });
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      showLeaderboardUnavailable();
+      return;
+    }
+
+    await fetchLeaderboard();
+  } finally {
+    scoreSubmissionInProgress = false;
   }
-  await fetchLeaderboard();
 }
 
 function escapeHtml(value) {
@@ -627,7 +673,7 @@ function promptName() {
     };
     const onCancel = () => {
       cleanup();
-      resolve('Player');
+      resolve(null);
     };
     const onKey = (e) => {
       if (e.key === 'Enter') onSubmit();

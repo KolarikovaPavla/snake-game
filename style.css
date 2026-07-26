@@ -163,6 +163,23 @@ body {
   letter-spacing: 1px;
 }
 
+.leaderboard-status {
+  color: #9da7b1;
+  font-size: 10px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  min-height: 14px;
+  text-align: center;
+}
+
+.leaderboard-status:empty {
+  display: none;
+}
+
+.leaderboard-status.error {
+  color: #efadad;
+}
+
 .leaderboard-list {
   list-style: none;
   padding: 0;
