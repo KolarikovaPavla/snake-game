@@ -132,11 +132,13 @@
 
 .gos-header,
 .gos-score-card {
+  margin-inline: 12px;
   color: var(--gos-ink);
   background: var(--gos-lcd);
 }
 
 .gos-header {
+  margin-top: 16px;
   padding: 18px 18px 9px;
   border: 1px solid var(--gos-lcd-dark);
   border-bottom: 0;
