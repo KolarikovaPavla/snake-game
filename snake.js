@@ -16,12 +16,13 @@ const nameCancel = document.getElementById('name-cancel');
 const mobileControls = document.querySelector('.mobile-controls');
 const boardWrap = document.querySelector('.board-wrap');
 const soundControls = document.getElementById('sound-controls');
+const comboControls = document.getElementById('combo-controls');
 
 const sound = window.SnakeSound;
 sound.createControl(soundControls);
 
 const combo = new window.ComboSystem({
-  host: boardWrap,
+  host: comboControls,
   windowMs: 3200,
 });
 
