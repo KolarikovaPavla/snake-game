@@ -15,6 +15,15 @@ const nameSubmit = document.getElementById('name-submit');
 const nameCancel = document.getElementById('name-cancel');
 const mobileControls = document.querySelector('.mobile-controls');
 const boardWrap = document.querySelector('.board-wrap');
+const soundControls = document.getElementById('sound-controls');
+
+const sound = window.SnakeSound;
+sound.createControl(soundControls);
+
+const combo = new window.ComboSystem({
+  host: boardWrap,
+  windowMs: 3200,
+});
 
 const SUPABASE_URL = 'https://rkgifqptlnnfxdmnhdul.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrZ2lmcXB0bG5uZnhkbW5oZHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MTUzNzksImV4cCI6MjA4NjI5MTM3OX0.Jf9kfliKPVc0Zt3bEhNVfY9i6EKZvm8Iu8cbxDhfvMc';
@@ -49,6 +58,11 @@ let popups = [];
 let topScores = [];
 let leaderboardAvailable = false;
 let scoreSubmissionInProgress = false;
+let finalizingRun = false;
+let runStartedAt = 0;
+let pauseStartedAt = 0;
+let totalPausedMs = 0;
+let lastComboMultiplier = 1;
 let obstacles = [];
 const maxObstacles = 4;
 let wallSpawnCooldown = 12;
@@ -56,9 +70,19 @@ let bonusFood = null;
 let nextBonusSpawnAt = 0;
 let lastFrameTime = 0;
 
+const gameOverScreen = new window.GameOverScreen(document.body, {
+  onRestart: () => startGame(),
+  onClose: () => {
+    overlayTitle.textContent = 'Game Over';
+    overlaySub.textContent = 'Press Enter or tap to play again';
+    overlay.classList.add('show');
+  },
+});
+
 bestEl.textContent = best;
 
 function resetGame() {
+  const now = performance.now();
   snake = [
     { x: 9, y: 10 },
     { x: 8, y: 10 },
@@ -75,6 +99,12 @@ function resetGame() {
   scoreEl.textContent = score;
   updateSpeed();
   placeFood();
+  runStartedAt = now;
+  pauseStartedAt = 0;
+  totalPausedMs = 0;
+  lastComboMultiplier = 1;
+  combo.reset(now);
+  gameOverScreen.hide({ restoreFocus: false });
   gameOver = false;
   paused = false;
   overlay.classList.remove('show');
@@ -350,10 +380,21 @@ function step() {
   snake.unshift(head);
 
   if (head.x === food.x && head.y === food.y) {
-    const points = food.type === 'purple' ? 25 : 10;
-    score += points;
+    const basePoints = food.type === 'purple' ? 25 : 10;
+    const award = combo.registerFood(food.type, basePoints, performance.now());
+    score += award.totalPoints;
     scoreEl.textContent = score;
-    addPopup(points, head.x, head.y, food.type === 'purple' ? '#d8a6ff' : '#ffe8a0');
+    addPopup(
+      award.totalPoints,
+      head.x,
+      head.y,
+      food.type === 'purple' ? '#d8a6ff' : '#ffe8a0'
+    );
+    sound.food(food.type);
+    if (award.multiplier > lastComboMultiplier) {
+      sound.combo(award.multiplier);
+    }
+    lastComboMultiplier = award.multiplier;
     stepTime = Math.max(minStep, stepTime - 5);
     updateSpeed();
     placeFood();
@@ -363,9 +404,15 @@ function step() {
   }
 
   if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
-    score += 50;
+    const award = combo.registerFood('bonus', 50, performance.now());
+    score += award.totalPoints;
     scoreEl.textContent = score;
-    addPopup(50, head.x, head.y, '#b9ffd0');
+    addPopup(award.totalPoints, head.x, head.y, '#b9ffd0');
+    sound.food('green');
+    if (award.multiplier > lastComboMultiplier) {
+      sound.combo(award.multiplier);
+    }
+    lastComboMultiplier = award.multiplier;
     bonusFood = null;
     scheduleBonusSpawn(performance.now());
   }
@@ -386,17 +433,75 @@ function updateObstacles() {
 }
 
 function endGame() {
+  if (gameOver) return;
+
   running = false;
   gameOver = true;
-  if (score > best) {
+  finalizingRun = true;
+
+  const previousBest = best;
+  const isNewBest = score > best;
+  const comboSummary = combo.getSummary();
+  const durationMs = Math.max(0, performance.now() - runStartedAt - totalPausedMs);
+
+  if (isNewBest) {
     best = score;
     localStorage.setItem('snake_best', best);
     bestEl.textContent = best;
   }
-  maybeSubmitLeaderboardScore(score);
+
+  sound.crash();
   overlayTitle.textContent = 'Game Over';
-  overlaySub.textContent = 'Press Enter to play again';
+  overlaySub.textContent = score > 0 ? 'Checking the leaderboard…' : 'Press Enter to play again';
   overlay.classList.add('show');
+
+  finalizeGameOver({
+    score,
+    previousBest,
+    isNewBest,
+    maxCombo: comboSummary.maxCombo,
+    foodEaten: comboSummary.foodsCollected,
+    durationMs,
+  });
+}
+
+async function finalizeGameOver(stats) {
+  const leaderboardResult = await maybeSubmitLeaderboardScore(stats.score);
+  finalizingRun = false;
+
+  if (stats.isNewBest) {
+    sound.highScore();
+  } else {
+    sound.gameOver();
+  }
+
+  let leaderboardStatus = '';
+  if (!leaderboardResult.available) {
+    leaderboardStatus = stats.score > 0
+      ? 'Leaderboard unavailable — your score is saved locally.'
+      : '';
+  } else if (leaderboardResult.submitted) {
+    leaderboardStatus = leaderboardResult.rank
+      ? `You reached #${leaderboardResult.rank} on the leaderboard!`
+      : 'Your score was added to the leaderboard.';
+  } else if (leaderboardResult.qualified) {
+    leaderboardStatus = 'Top 3 score not submitted.';
+  } else if (stats.score > 0) {
+    leaderboardStatus = 'Keep climbing — the Top 3 is within reach.';
+  }
+
+  overlay.classList.remove('show');
+  gameOverScreen.show({
+    score: stats.score,
+    bestScore: stats.previousBest,
+    isNewBest: stats.isNewBest,
+    maxCombo: stats.maxCombo,
+    foodEaten: stats.foodEaten,
+    durationMs: stats.durationMs,
+    leaderboardStatus,
+    rank: leaderboardResult.rank,
+    shareUrl: `${location.origin}${location.pathname}`,
+  });
 }
 
 function render() {
@@ -416,17 +521,22 @@ function loop(timestamp) {
   lastFrameTime = timestamp;
   const delta = timestamp - lastStep;
 
-  if (!bonusFood && timestamp >= nextBonusSpawnAt) {
-    spawnBonusFood();
-  }
-  if (bonusFood && timestamp >= bonusFood.expiresAt) {
-    bonusFood = null;
-    scheduleBonusSpawn(timestamp);
-  }
+  if (!paused) {
+    combo.tick(timestamp);
+    lastComboMultiplier = combo.multiplier;
 
-  if (!paused && delta >= stepTime) {
-    lastStep = timestamp;
-    step();
+    if (!bonusFood && timestamp >= nextBonusSpawnAt) {
+      spawnBonusFood();
+    }
+    if (bonusFood && timestamp >= bonusFood.expiresAt) {
+      bonusFood = null;
+      scheduleBonusSpawn(timestamp);
+    }
+
+    if (delta >= stepTime) {
+      lastStep = timestamp;
+      step();
+    }
   }
   updatePopups();
   render();
@@ -434,8 +544,11 @@ function loop(timestamp) {
 }
 
 function startGame() {
+  if (finalizingRun) return;
+
   resetGame();
   running = true;
+  sound.start();
   lastStep = 0;
   overlayTitle.textContent = '';
   overlaySub.textContent = '';
@@ -446,6 +559,17 @@ function startGame() {
 function togglePause() {
   if (!running || gameOver) return;
   paused = !paused;
+  const now = performance.now();
+  if (paused) {
+    pauseStartedAt = now;
+    combo.pause(now);
+    sound.pause();
+  } else {
+    totalPausedMs += Math.max(0, now - pauseStartedAt);
+    pauseStartedAt = 0;
+    combo.resume(now);
+    sound.resume();
+  }
   overlayTitle.textContent = paused ? 'Paused' : '';
   overlaySub.textContent = paused ? 'Press Space to resume' : '';
   overlay.classList.toggle('show', paused);
@@ -460,6 +584,7 @@ function handleDirection(newDir) {
 
 window.addEventListener('keydown', (e) => {
   if (nameModal && nameModal.classList.contains('show')) return;
+  if (gameOverScreen.isOpen()) return;
 
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
     e.preventDefault();
@@ -488,10 +613,10 @@ window.addEventListener('keydown', (e) => {
 
 overlay.classList.add('show');
 overlay.addEventListener('click', () => {
-  if (!running) startGame();
+  if (!running && !finalizingRun) startGame();
 });
 overlay.addEventListener('touchstart', () => {
-  if (!running) startGame();
+  if (!running && !finalizingRun) startGame();
 }, { passive: true });
 
 if (mobileControls) {
@@ -596,16 +721,27 @@ function qualifiesForLeaderboard(candidateScore) {
 }
 
 async function maybeSubmitLeaderboardScore(finalScore) {
-  if (!supabaseClient || scoreSubmissionInProgress || finalScore <= 0) return;
+  const result = {
+    available: false,
+    qualified: false,
+    submitted: false,
+    rank: null,
+  };
+
+  if (!supabaseClient || scoreSubmissionInProgress || finalScore <= 0) return result;
 
   scoreSubmissionInProgress = true;
 
   try {
     const leaderboardLoaded = await fetchLeaderboard();
-    if (!leaderboardLoaded || !qualifiesForLeaderboard(finalScore)) return;
+    if (!leaderboardLoaded) return result;
+
+    result.available = true;
+    result.qualified = qualifiesForLeaderboard(finalScore);
+    if (!result.qualified) return result;
 
     const name = await promptName();
-    if (name === null) return;
+    if (name === null) return result;
 
     const cleanName = name.trim().slice(0, 12) || 'Player';
     const { error } = await supabaseClient
@@ -615,13 +751,27 @@ async function maybeSubmitLeaderboardScore(finalScore) {
     if (error) {
       console.error('Supabase insert error:', error);
       showLeaderboardUnavailable();
-      return;
+      result.available = false;
+      return result;
     }
 
-    await fetchLeaderboard();
+    result.submitted = true;
+    const refreshed = await fetchLeaderboard();
+    if (refreshed) {
+      const rankIndex = topScores.findIndex(
+        (row) => row.name === cleanName && Number(row.score) === finalScore
+      );
+      result.rank = rankIndex >= 0 ? rankIndex + 1 : null;
+    }
+  } catch (error) {
+    console.error('Supabase submission error:', error);
+    showLeaderboardUnavailable();
+    result.available = false;
   } finally {
     scoreSubmissionInProgress = false;
   }
+
+  return result;
 }
 
 function escapeHtml(value) {
