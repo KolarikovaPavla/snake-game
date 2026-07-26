@@ -1,0 +1,174 @@
+.combo-hud {
+  --combo-glow: #7aa2ff;
+  --combo-progress: 0;
+  width: min(100%, 320px);
+  padding: 9px 11px 10px;
+  border: 1px solid color-mix(in srgb, var(--combo-glow) 42%, #26313a);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--combo-glow) 11%, transparent), transparent 60%),
+    rgba(9, 14, 18, 0.94);
+  color: #eef5fa;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    0 7px 22px rgba(0, 0, 0, 0.28);
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  transition: border-color 160ms ease, filter 160ms ease, opacity 160ms ease;
+  overflow: hidden;
+}
+
+.board-wrap > .combo-hud {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+  width: 132px;
+  pointer-events: none;
+}
+
+.combo-hud[data-active='false'] {
+  opacity: 0.58;
+  filter: saturate(0.55);
+}
+
+.combo-hud[data-tier='2'] {
+  --combo-glow: #6eea8d;
+}
+
+.combo-hud[data-tier='3'] {
+  --combo-glow: #f2d06b;
+}
+
+.combo-hud[data-tier='4'] {
+  --combo-glow: #d18aff;
+}
+
+.combo-hud[data-tier='5'] {
+  --combo-glow: #ff7a91;
+}
+
+.combo-hud__top,
+.combo-hud__readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.combo-hud__label {
+  color: #aab7c1;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.combo-hud__multiplier {
+  color: var(--combo-glow);
+  font-size: 17px;
+  line-height: 1;
+  text-shadow: 0 0 13px color-mix(in srgb, var(--combo-glow) 55%, transparent);
+}
+
+.combo-hud__readout {
+  margin-top: 3px;
+}
+
+.combo-hud__count {
+  color: #f5f9fc;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.combo-hud__message {
+  min-width: 0;
+  overflow: hidden;
+  color: #929faa;
+  font-size: 7px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combo-hud__track {
+  height: 3px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.combo-hud__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--combo-glow) 62%, #fff), var(--combo-glow));
+  box-shadow: 0 0 8px var(--combo-glow);
+  transform: scaleX(var(--combo-progress));
+  transform-origin: left center;
+}
+
+.combo-hud--pop {
+  animation: combo-hud-pop 300ms cubic-bezier(0.2, 1.7, 0.4, 1);
+}
+
+.combo-hud--pop .combo-hud__multiplier {
+  animation: combo-number-pop 300ms cubic-bezier(0.2, 1.7, 0.4, 1);
+}
+
+.combo-hud__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes combo-hud-pop {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  45% {
+    filter: brightness(1.3);
+    transform: scale(1.045);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes combo-number-pop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.2);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 780px) {
+  .board-wrap > .combo-hud {
+    top: 8px;
+    right: 8px;
+    width: 124px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combo-hud,
+  .combo-hud--pop,
+  .combo-hud--pop .combo-hud__multiplier {
+    animation: none;
+    transition: none;
+  }
+}
