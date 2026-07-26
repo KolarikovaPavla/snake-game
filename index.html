@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="nokia-shell.css" />
   <link rel="stylesheet" href="nokia-keypad.css" />
   <link rel="stylesheet" href="nokia-lcd.css" />
-  <link rel="stylesheet" href="nokia-integration.css?v=fit-20260726" />
+  <link rel="stylesheet" href="nokia-integration.css?v=real-3310-20260726-3" />
 </head>
 <body>
   <div class="phone-stage">
@@ -31,37 +31,62 @@
             <span>▰</span>
           </div>
 
-          <header class="hud">
-            <div class="title-row">
-              <div class="title">SNAKE II</div>
-              <div id="sound-controls" aria-label="Sound controls"></div>
-            </div>
-            <div class="stats">
-              <div><div class="stat-label">Score</div><div class="stat-value" id="score">0</div></div>
-              <div><div class="stat-label">Best</div><div class="stat-value" id="best">0</div></div>
-              <div><div class="stat-label">Speed</div><div class="stat-value"><span id="speed">0.12</span>s</div></div>
-            </div>
-            <div id="combo-controls" class="combo-controls"></div>
-          </header>
-
           <section class="game-row">
             <div class="game-main">
               <section class="board-wrap">
                 <canvas id="board" width="320" height="320"></canvas>
                 <div class="overlay" id="overlay">
-                  <div id="overlay-title">Press NAVI to start</div>
-                  <div id="overlay-sub">Use 2 · 4 · 6 · 8 to move</div>
+                  <div id="overlay-title">SNAKE II</div>
+                  <div id="overlay-sub">NAVI · START</div>
                 </div>
               </section>
+
+              <aside class="lcd-game-info" aria-label="Game status">
+                <div class="lcd-score">
+                  <span>Score</span>
+                  <strong id="score">0</strong>
+                </div>
+                <div class="lcd-score">
+                  <span>Best</span>
+                  <strong id="best">0</strong>
+                </div>
+                <div class="lcd-speed">
+                  <span>Speed</span>
+                  <strong><span id="speed">0.12</span>s</strong>
+                </div>
+                <div id="combo-controls" class="combo-controls"></div>
+              </aside>
             </div>
 
             <aside class="sidebar" id="phone-menu" aria-hidden="true">
               <div class="phone-menu-title">
-                <span>OPTIONS</span>
+                <span id="phone-menu-heading">MENU</span>
                 <button id="phone-menu-close" type="button" aria-label="Close phone menu">C</button>
               </div>
-              <section class="legend">
-                <div class="legend-title">How to play</div>
+
+              <div class="phone-menu-page is-active" id="phone-menu-home">
+                <div class="phone-menu-list" role="menu" aria-label="Phone menu">
+                  <button type="button" class="phone-menu-item" data-phone-menu-action="resume" role="menuitem">
+                    Resume
+                  </button>
+                  <button type="button" class="phone-menu-item" data-phone-menu-action="new-game" role="menuitem">
+                    New game
+                  </button>
+                  <button type="button" class="phone-menu-item" data-phone-menu-action="high-scores" role="menuitem">
+                    High scores
+                  </button>
+                  <button type="button" class="phone-menu-item" data-phone-menu-action="help" role="menuitem">
+                    Help
+                  </button>
+                  <button type="button" class="phone-menu-item" data-phone-menu-action="sound" role="menuitem">
+                    Sound
+                  </button>
+                </div>
+                <div id="sound-controls" aria-label="Sound controls"></div>
+              </div>
+
+              <section class="phone-menu-page legend" id="phone-menu-help" hidden>
+                <div class="legend-title">Help</div>
                 <ul class="legend-list">
                   <li><span class="legend-dot yellow"></span>Food: +10</li>
                   <li><span class="legend-dot purple"></span>Special food: +25</li>
@@ -72,7 +97,7 @@
                 </ul>
               </section>
 
-              <section class="leaderboard">
+              <section class="phone-menu-page leaderboard" id="phone-menu-high-scores" hidden>
                 <div class="leaderboard-title">High scores</div>
                 <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">
                   Loading scores…
@@ -118,6 +143,6 @@
   <script src="sound.js"></script>
   <script src="game-over.js"></script>
   <script src="nokia-keypad.js"></script>
-  <script src="snake.js?v=fit-20260726"></script>
+  <script src="snake.js?v=real-3310-20260726"></script>
 </body>
 </html>
