@@ -1,0 +1,345 @@
+.nk-keypad {
+  --nk-plastic: #2f5682;
+  --nk-plastic-dark: #173557;
+  --nk-plastic-light: #6386a8;
+  --nk-key: #c7d1dc;
+  --nk-key-dark: #8799aa;
+  --nk-ink: #102235;
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 360px);
+  margin-inline: auto;
+  padding: clamp(12px, 3vw, 20px) clamp(18px, 6vw, 34px) clamp(18px, 4vw, 28px);
+  overflow: hidden;
+  color: #eef5fb;
+  border: 1px solid rgba(186, 214, 238, 0.42);
+  border-radius: 22% 22% 33% 33% / 10% 10% 16% 16%;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 255, 255, 0.34), transparent 35%),
+    linear-gradient(105deg, rgba(255, 255, 255, 0.12), transparent 20% 80%, rgba(0, 0, 0, 0.22)),
+    linear-gradient(180deg, var(--nk-plastic-light), var(--nk-plastic) 23%, var(--nk-plastic-dark));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 9px 0 14px rgba(255, 255, 255, 0.07),
+    inset -10px 0 16px rgba(0, 0, 0, 0.2),
+    0 14px 22px rgba(2, 10, 18, 0.34);
+  font-family: Arial, Helvetica, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nk-keypad::before,
+.nk-keypad::after {
+  position: absolute;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.nk-keypad::before {
+  inset: 5px 9px 8px;
+  border: 1px solid rgba(226, 240, 252, 0.16);
+  border-radius: inherit;
+}
+
+.nk-keypad::after {
+  right: 5%;
+  bottom: 3%;
+  left: 5%;
+  height: 44%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, transparent, rgba(7, 24, 41, 0.14));
+}
+
+.nk-keypad__speaker,
+.nk-keypad__brand,
+.nk-keypad__actions,
+.nk-keypad__dial,
+.nk-keypad__help {
+  position: relative;
+  z-index: 1;
+}
+
+.nk-keypad__speaker {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  height: 5px;
+  margin: 0 auto 5px;
+}
+
+.nk-keypad__speaker i {
+  display: block;
+  width: 18px;
+  border-radius: 100%;
+  background: rgba(8, 26, 45, 0.7);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  transform: rotate(-3deg);
+}
+
+.nk-keypad__brand {
+  margin-bottom: 9px;
+  color: rgba(242, 248, 252, 0.96);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+  text-align: center;
+  text-shadow: 0 1px 1px rgba(2, 12, 23, 0.8);
+}
+
+.nk-keypad__actions {
+  display: grid;
+  grid-template-columns: 1fr 1.18fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 7px 11px;
+  align-items: center;
+  margin: 0 auto 10px;
+  width: 82%;
+}
+
+.nk-keypad__actions .nk-key--menu {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.nk-keypad__actions .nk-key--navi {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.nk-keypad__actions .nk-key--back {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.nk-keypad__actions .nk-key--call {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.nk-keypad__actions .nk-key--end {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.nk-keypad__dial {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 2vw, 9px) clamp(9px, 2.5vw, 13px);
+  width: 100%;
+}
+
+.nk-key {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  color: var(--nk-ink);
+  border: 1px solid rgba(15, 35, 55, 0.78);
+  outline: none;
+  background:
+    radial-gradient(ellipse at 45% 16%, rgba(255, 255, 255, 0.94), transparent 38%),
+    linear-gradient(180deg, #dbe2e9, var(--nk-key) 58%, var(--nk-key-dark));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    inset 0 -3px 4px rgba(45, 65, 84, 0.28),
+    0 4px 0 rgba(12, 34, 57, 0.74),
+    0 6px 8px rgba(4, 18, 31, 0.32);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 70ms ease, box-shadow 70ms ease, filter 120ms ease;
+}
+
+.nk-key:hover {
+  filter: brightness(1.06);
+}
+
+.nk-key:focus-visible {
+  box-shadow:
+    0 0 0 3px #c9df72,
+    0 4px 0 rgba(12, 34, 57, 0.74),
+    0 7px 10px rgba(4, 18, 31, 0.38);
+}
+
+.nk-key:active,
+.nk-key.nk-key--pressed {
+  transform: translateY(3px) scale(0.985);
+  box-shadow:
+    inset 0 2px 5px rgba(25, 45, 63, 0.34),
+    0 1px 0 rgba(12, 34, 57, 0.8),
+    0 2px 3px rgba(4, 18, 31, 0.24);
+}
+
+.nk-key__main {
+  font-weight: 800;
+  line-height: 1;
+}
+
+.nk-key__secondary,
+.nk-key__hint {
+  position: absolute;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.nk-key__secondary {
+  right: 10%;
+  bottom: 14%;
+  font-size: clamp(6px, 1.6vw, 8px);
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+}
+
+.nk-key__hint {
+  top: 14%;
+  right: 10%;
+  color: #203d59;
+  font-size: clamp(7px, 1.8vw, 9px);
+  text-transform: uppercase;
+}
+
+.nk-key--soft {
+  height: 31px;
+  border-radius: 54% 54% 42% 42% / 58% 58% 45% 45%;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  transform: rotate(var(--nk-key-angle, 0deg));
+}
+
+.nk-key--menu {
+  --nk-key-angle: -5deg;
+}
+
+.nk-key--back {
+  --nk-key-angle: 5deg;
+}
+
+.nk-key--soft:active,
+.nk-key--soft.nk-key--pressed {
+  transform: rotate(var(--nk-key-angle, 0deg)) translateY(3px) scale(0.985);
+}
+
+.nk-key--soft .nk-key__hint {
+  top: auto;
+  right: 0;
+  bottom: -12px;
+  left: 0;
+  color: rgba(237, 246, 252, 0.78);
+  font-size: 7px;
+  text-shadow: 0 1px 1px #0d2c4a;
+}
+
+.nk-key--navi {
+  height: 38px;
+  color: #eff8fc;
+  border-color: #071728;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 42% 22%, #758ca2, transparent 37%),
+    linear-gradient(180deg, #526d87, #142f4c);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.44),
+    inset 0 -4px 5px rgba(0, 0, 0, 0.34),
+    0 4px 0 #0a2037,
+    0 6px 8px rgba(4, 18, 31, 0.42);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.nk-key--navi .nk-key__hint {
+  top: auto;
+  right: 0;
+  bottom: -13px;
+  left: 0;
+  color: rgba(237, 246, 252, 0.84);
+  font-size: 7px;
+  text-align: center;
+  text-shadow: 0 1px 1px #0d2c4a;
+}
+
+.nk-key--call,
+.nk-key--end {
+  width: 78%;
+  height: 29px;
+  margin-top: 5px;
+  border-radius: 50% 50% 42% 42% / 60% 60% 45% 45%;
+  font-size: 17px;
+}
+
+.nk-key--call {
+  justify-self: end;
+  color: #0e5b37;
+}
+
+.nk-key--end {
+  justify-self: start;
+  color: #882a30;
+}
+
+.nk-key--call .nk-key__hint,
+.nk-key--end .nk-key__hint {
+  display: none;
+}
+
+.nk-key--number {
+  aspect-ratio: 1.65 / 1;
+  min-height: 29px;
+  border-radius: 48% 48% 42% 42% / 55% 55% 44% 44%;
+  font-size: clamp(14px, 4vw, 21px);
+}
+
+.nk-key--number:nth-child(3n + 1) {
+  transform: rotate(-2.5deg);
+}
+
+.nk-key--number:nth-child(3n) {
+  transform: rotate(2.5deg);
+}
+
+.nk-key--number:nth-child(3n + 1):active,
+.nk-key--number:nth-child(3n + 1).nk-key--pressed {
+  transform: rotate(-2.5deg) translateY(3px) scale(0.985);
+}
+
+.nk-key--number:nth-child(3n):active,
+.nk-key--number:nth-child(3n).nk-key--pressed {
+  transform: rotate(2.5deg) translateY(3px) scale(0.985);
+}
+
+.nk-keypad__help {
+  margin: 15px 0 0;
+  color: rgba(232, 243, 250, 0.78);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.nk-keypad__help b {
+  color: #eef59d;
+}
+
+@media (max-width: 420px) {
+  .nk-keypad {
+    padding-inline: 15px;
+    border-radius: 18% 18% 28% 28% / 8% 8% 13% 13%;
+  }
+
+  .nk-keypad__actions {
+    width: 87%;
+  }
+
+  .nk-keypad__help {
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-key {
+    transition: none;
+  }
+}
