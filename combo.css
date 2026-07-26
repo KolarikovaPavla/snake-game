@@ -17,13 +17,10 @@
   overflow: hidden;
 }
 
-.board-wrap > .combo-hud {
-  position: absolute;
-  z-index: 4;
-  top: 10px;
-  right: 10px;
-  width: 132px;
-  pointer-events: none;
+.combo-controls {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .combo-hud[data-active='false'] {
@@ -153,14 +150,6 @@
   }
   100% {
     transform: translateY(0) scale(1);
-  }
-}
-
-@media (max-width: 780px) {
-  .board-wrap > .combo-hud {
-    top: 8px;
-    right: 8px;
-    width: 124px;
   }
 }
 
