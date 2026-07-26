@@ -21,6 +21,37 @@ const phoneMenu = document.getElementById('phone-menu');
 const phoneMenuClose = document.getElementById('phone-menu-close');
 const nokiaKeypadHost = document.getElementById('nokia-keypad');
 const lcdClock = document.getElementById('lcd-clock');
+const phoneStage = document.querySelector('.phone-stage');
+const phoneShell = document.querySelector('.phone-shell');
+
+let phoneFitFrame = 0;
+
+function fitPhoneToViewport() {
+  if (!phoneStage || !phoneShell) return;
+
+  const safeInset = Math.max(8, Math.min(18, phoneStage.clientWidth * 0.03));
+  const availableWidth = Math.max(1, phoneStage.clientWidth - safeInset * 2);
+  const availableHeight = Math.max(1, phoneStage.clientHeight - safeInset * 2);
+  const naturalWidth = Math.max(1, phoneShell.offsetWidth);
+  const naturalHeight = Math.max(1, phoneShell.offsetHeight);
+  const scale = Math.min(
+    1,
+    availableWidth / naturalWidth,
+    availableHeight / naturalHeight
+  );
+
+  phoneShell.style.setProperty('--phone-fit-scale', String(Math.max(0.35, scale)));
+}
+
+function schedulePhoneFit() {
+  window.cancelAnimationFrame(phoneFitFrame);
+  phoneFitFrame = window.requestAnimationFrame(fitPhoneToViewport);
+}
+
+schedulePhoneFit();
+window.addEventListener('resize', schedulePhoneFit);
+window.visualViewport?.addEventListener('resize', schedulePhoneFit);
+document.fonts?.ready.then(schedulePhoneFit);
 
 const sound = window.SnakeSound;
 sound.createControl(soundControls);
