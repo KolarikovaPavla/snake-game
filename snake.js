@@ -17,46 +17,6 @@ const mobileControls = document.querySelector('.mobile-controls');
 const boardWrap = document.querySelector('.board-wrap');
 const soundControls = document.getElementById('sound-controls');
 const comboControls = document.getElementById('combo-controls');
-const phoneMenu = document.getElementById('phone-menu');
-const phoneMenuClose = document.getElementById('phone-menu-close');
-const phoneMenuHeading = document.getElementById('phone-menu-heading');
-const phoneMenuHome = document.getElementById('phone-menu-home');
-const phoneMenuHelp = document.getElementById('phone-menu-help');
-const phoneMenuHighScores = document.getElementById('phone-menu-high-scores');
-const phoneMenuItems = Array.from(document.querySelectorAll('.phone-menu-item'));
-const nokiaKeypadHost = document.getElementById('nokia-keypad');
-const lcdClock = document.getElementById('lcd-clock');
-const phoneStage = document.querySelector('.phone-stage');
-const phoneShell = document.querySelector('.phone-shell');
-
-let phoneFitFrame = 0;
-
-function fitPhoneToViewport() {
-  if (!phoneStage || !phoneShell) return;
-
-  const safeInset = Math.max(8, Math.min(18, phoneStage.clientWidth * 0.03));
-  const availableWidth = Math.max(1, phoneStage.clientWidth - safeInset * 2);
-  const availableHeight = Math.max(1, phoneStage.clientHeight - safeInset * 2);
-  const naturalWidth = Math.max(1, phoneShell.offsetWidth);
-  const naturalHeight = Math.max(1, phoneShell.offsetHeight);
-  const scale = Math.min(
-    1,
-    availableWidth / naturalWidth,
-    availableHeight / naturalHeight
-  );
-
-  phoneShell.style.setProperty('--phone-fit-scale', String(Math.max(0.35, scale)));
-}
-
-function schedulePhoneFit() {
-  window.cancelAnimationFrame(phoneFitFrame);
-  phoneFitFrame = window.requestAnimationFrame(fitPhoneToViewport);
-}
-
-schedulePhoneFit();
-window.addEventListener('resize', schedulePhoneFit);
-window.visualViewport?.addEventListener('resize', schedulePhoneFit);
-document.fonts?.ready.then(schedulePhoneFit);
 
 const sound = window.SnakeSound;
 sound.createControl(soundControls);
@@ -104,11 +64,6 @@ let runStartedAt = 0;
 let pauseStartedAt = 0;
 let totalPausedMs = 0;
 let lastComboMultiplier = 1;
-let phoneMenuOpen = false;
-let menuPausedGame = false;
-let phoneMenuView = 'home';
-let phoneMenuSelection = 0;
-let phoneKeypad = null;
 let obstacles = [];
 const maxObstacles = 4;
 let wallSpawnCooldown = 12;
@@ -125,174 +80,6 @@ const gameOverScreen = new window.GameOverScreen(document.body, {
   },
 });
 
-phoneKeypad = window.NokiaKeypad.mount(nokiaKeypadHost, {
-  getState: () => ({ running, paused, gameOver }),
-  onDirection: (nextDirection) => {
-    if (phoneMenuOpen) {
-      if (nextDirection === 'up') movePhoneMenuSelection(-1);
-      if (nextDirection === 'down') movePhoneMenuSelection(1);
-      return;
-    }
-    const directions = {
-      up: { x: 0, y: -1 },
-      down: { x: 0, y: 1 },
-      left: { x: -1, y: 0 },
-      right: { x: 1, y: 0 },
-    };
-    handleDirection(directions[nextDirection]);
-  },
-  onStart: () => {
-    if (phoneMenuOpen) {
-      activatePhoneMenuSelection();
-      return;
-    }
-    setPhoneMenu(false);
-    startGame();
-  },
-  onPause: () => {
-    if (phoneMenuOpen) {
-      activatePhoneMenuSelection();
-      return;
-    }
-    togglePause();
-  },
-  onMenu: () => setPhoneMenu(!phoneMenuOpen),
-  onBack: () => handlePhoneMenuBack(),
-});
-
-phoneMenuClose.addEventListener('click', handlePhoneMenuBack);
-phoneMenuItems.forEach((item) => {
-  item.addEventListener('click', () => {
-    phoneMenuSelection = availablePhoneMenuItems().indexOf(item);
-    renderPhoneMenuSelection();
-    activatePhoneMenuSelection();
-  });
-});
-
-function updateLcdClock() {
-  const now = new Date();
-  lcdClock.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(
-    now.getMinutes()
-  ).padStart(2, '0')}`;
-}
-
-updateLcdClock();
-window.setInterval(updateLcdClock, 30000);
-
-function syncPhoneKeypad() {
-  if (phoneKeypad) {
-    phoneKeypad.setState({ running, paused, gameOver });
-  }
-}
-
-function availablePhoneMenuItems() {
-  return phoneMenuItems.filter((item) => !item.disabled && !item.hidden);
-}
-
-function renderPhoneMenuSelection() {
-  const availableItems = availablePhoneMenuItems();
-  if (!availableItems.length) return;
-
-  phoneMenuSelection = Math.max(0, Math.min(phoneMenuSelection, availableItems.length - 1));
-  availableItems.forEach((item, index) => {
-    const selected = index === phoneMenuSelection;
-    item.classList.toggle('is-selected', selected);
-    item.setAttribute('aria-current', selected ? 'true' : 'false');
-  });
-}
-
-function showPhoneMenuPage(view) {
-  phoneMenuView = view;
-  const pages = {
-    home: phoneMenuHome,
-    help: phoneMenuHelp,
-    'high-scores': phoneMenuHighScores,
-  };
-
-  Object.entries(pages).forEach(([name, page]) => {
-    if (!page) return;
-    const active = name === view;
-    page.hidden = !active;
-    page.classList.toggle('is-active', active);
-  });
-
-  phoneMenuHeading.textContent =
-    view === 'high-scores' ? 'SCORES' : view === 'help' ? 'HELP' : 'MENU';
-
-  if (view === 'home') {
-    const resumeItem = phoneMenuItems.find(
-      (item) => item.dataset.phoneMenuAction === 'resume'
-    );
-    if (resumeItem) resumeItem.disabled = !running || gameOver;
-    phoneMenuSelection = 0;
-    renderPhoneMenuSelection();
-  }
-}
-
-function movePhoneMenuSelection(delta) {
-  if (phoneMenuView !== 'home') return;
-  const availableItems = availablePhoneMenuItems();
-  if (!availableItems.length) return;
-  phoneMenuSelection =
-    (phoneMenuSelection + delta + availableItems.length) % availableItems.length;
-  renderPhoneMenuSelection();
-}
-
-function activatePhoneMenuSelection() {
-  if (phoneMenuView !== 'home') {
-    showPhoneMenuPage('home');
-    return;
-  }
-
-  const item = availablePhoneMenuItems()[phoneMenuSelection];
-  const action = item?.dataset.phoneMenuAction;
-  if (!action) return;
-
-  if (action === 'resume') {
-    setPhoneMenu(false);
-  } else if (action === 'new-game') {
-    setPhoneMenu(false);
-    startGame();
-  } else if (action === 'high-scores') {
-    showPhoneMenuPage('high-scores');
-  } else if (action === 'help') {
-    showPhoneMenuPage('help');
-  } else if (action === 'sound') {
-    soundControls.querySelector('button')?.click();
-  }
-}
-
-function handlePhoneMenuBack() {
-  if (!phoneMenuOpen) return;
-  if (phoneMenuView !== 'home') {
-    showPhoneMenuPage('home');
-  } else {
-    setPhoneMenu(false);
-  }
-}
-
-function setPhoneMenu(open) {
-  const shouldOpen = Boolean(open);
-  if (shouldOpen === phoneMenuOpen) return;
-
-  if (shouldOpen && running && !paused && !gameOver) {
-    menuPausedGame = true;
-    togglePause();
-  }
-
-  phoneMenuOpen = shouldOpen;
-  phoneMenu.classList.toggle('is-open', phoneMenuOpen);
-  phoneMenu.setAttribute('aria-hidden', String(!phoneMenuOpen));
-  if (phoneMenuOpen) showPhoneMenuPage('home');
-
-  if (!phoneMenuOpen && menuPausedGame && running && paused && !gameOver) {
-    menuPausedGame = false;
-    togglePause();
-  } else if (!phoneMenuOpen) {
-    menuPausedGame = false;
-  }
-}
-
 bestEl.textContent = best;
 
 function resetGame() {
@@ -305,7 +92,7 @@ function resetGame() {
   obstacles = [];
   wallSpawnCooldown = 12;
   bonusFood = null;
-  scheduleBonusSpawn(now);
+  scheduleBonusSpawn(0);
   direction = { x: 1, y: 0 };
   pendingDir = { x: 1, y: 0 };
   score = 0;
@@ -321,8 +108,6 @@ function resetGame() {
   gameOverScreen.hide({ restoreFocus: false });
   gameOver = false;
   paused = false;
-  setPhoneMenu(false);
-  syncPhoneKeypad();
   overlay.classList.remove('show');
 }
 
@@ -407,9 +192,9 @@ function isWallSpotFree(x, y, length, horizontal, occupied) {
 }
 
 function drawGrid() {
-  ctx.fillStyle = '#a9b978';
+  ctx.fillStyle = '#0a0e11';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'rgba(23, 38, 25, 0.12)';
+  ctx.strokeStyle = '#161c22';
   ctx.lineWidth = 1;
 
   for (let i = 0; i <= gridSize; i += 1) {
@@ -427,12 +212,12 @@ function drawGrid() {
 }
 
 function drawObstacles() {
-  ctx.fillStyle = '#596b4c';
+  ctx.fillStyle = '#46515b';
   obstacles.forEach((wall) => {
     wall.cells.forEach((o) => {
       const x = o.x * cellSize;
       const y = o.y * cellSize;
-      ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+      ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
     });
   });
 }
@@ -445,21 +230,44 @@ function drawSnake() {
     const inset = cellSize * 0.08;
     const size = cellSize - inset * 2;
 
-    ctx.fillStyle = isHead ? '#102116' : '#1d301d';
-    ctx.fillRect(
-      Math.round(x + inset),
-      Math.round(y + inset),
-      Math.round(size),
-      Math.round(size)
+    const grad = ctx.createRadialGradient(
+      x + cellSize * 0.35,
+      y + cellSize * 0.35,
+      cellSize * 0.1,
+      x + cellSize * 0.6,
+      y + cellSize * 0.6,
+      cellSize * 0.7
     );
+
+    if (isHead) {
+      grad.addColorStop(0, '#8df5b2');
+      grad.addColorStop(0.5, '#43cc78');
+      grad.addColorStop(1, '#1f7a45');
+    } else {
+      grad.addColorStop(0, '#6feaa2');
+      grad.addColorStop(0.6, '#2fb56b');
+      grad.addColorStop(1, '#1a6b3b');
+    }
+
+    ctx.fillStyle = grad;
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = cellSize * 0.15;
+    ctx.shadowOffsetY = cellSize * 0.05;
+    roundRect(x + inset, y + inset, size, size, cellSize * 0.25);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
     if (isHead) {
       const eyeSize = cellSize * 0.18;
       const eyeOffsetX = direction.x === -1 ? cellSize * 0.25 : cellSize * 0.62;
       const eyeOffsetY = direction.y === -1 ? cellSize * 0.25 : cellSize * 0.62;
-      ctx.fillStyle = '#a9b978';
+      ctx.fillStyle = '#0a0f12';
       ctx.beginPath();
-      ctx.arc(x + eyeOffsetX, y + eyeOffsetY, eyeSize * 0.38, 0, Math.PI * 2);
+      ctx.arc(x + eyeOffsetX, y + eyeOffsetY, eyeSize * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d7f7ff';
+      ctx.beginPath();
+      ctx.arc(x + eyeOffsetX - eyeSize * 0.12, y + eyeOffsetY - eyeSize * 0.12, eyeSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
     }
   });
@@ -469,19 +277,23 @@ function drawFood() {
   const cx = food.x * cellSize + cellSize / 2;
   const cy = food.y * cellSize + cellSize / 2;
   const r = cellSize * 0.34;
-  ctx.save();
-  ctx.translate(Math.round(cx), Math.round(cy));
-  ctx.fillStyle = '#172619';
-
+  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.2, cx, cy, r);
   if (food.type === 'purple') {
-    ctx.rotate(Math.PI / 4);
-    ctx.fillRect(-r * 0.72, -r * 0.72, r * 1.44, r * 1.44);
-    ctx.fillStyle = '#a9b978';
-    ctx.fillRect(-r * 0.25, -r * 0.25, r * 0.5, r * 0.5);
+    grad.addColorStop(0, '#f3c3ff');
+    grad.addColorStop(0.6, '#b06bff');
+    grad.addColorStop(1, '#6b2bc5');
   } else {
-    ctx.fillRect(-r * 0.75, -r * 0.75, r * 1.5, r * 1.5);
+    grad.addColorStop(0, '#fff2b1');
+    grad.addColorStop(0.6, '#f2d06b');
+    grad.addColorStop(1, '#c59b2d');
   }
-  ctx.restore();
+  ctx.fillStyle = grad;
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = r * 0.6;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 }
 
 function drawBonusFood() {
@@ -489,12 +301,17 @@ function drawBonusFood() {
   const cx = bonusFood.x * cellSize + cellSize / 2;
   const cy = bonusFood.y * cellSize + cellSize / 2;
   const r = cellSize * 0.34;
-  ctx.fillStyle = '#172619';
-  ctx.fillRect(cx - r * 0.25, cy - r, r * 0.5, r * 2);
-  ctx.fillRect(cx - r, cy - r * 0.25, r * 2, r * 0.5);
-  ctx.strokeStyle = '#172619';
-  ctx.lineWidth = Math.max(1, cellSize * 0.08);
-  ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
+  const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.2, cx, cy, r);
+  grad.addColorStop(0, '#c8ffd9');
+  grad.addColorStop(0.6, '#6eea8d');
+  grad.addColorStop(1, '#1f8b49');
+  ctx.fillStyle = grad;
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = r * 0.6;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 }
 
 function roundRect(x, y, w, h, r) {
@@ -528,7 +345,7 @@ function addPopup(points, x, y, color) {
     y: y * cellSize + cellSize / 2,
     vy: cellSize * 0.02,
     alpha: 1,
-    color: color || '#172619',
+    color: color || '#ffe8a0',
   });
 }
 
@@ -572,7 +389,7 @@ function step() {
       award.totalPoints,
       head.x,
       head.y,
-      '#172619'
+      food.type === 'purple' ? '#d8a6ff' : '#ffe8a0'
     );
     sound.food(food.type);
     if (award.multiplier > lastComboMultiplier) {
@@ -591,7 +408,7 @@ function step() {
     const award = combo.registerFood('bonus', 50, performance.now());
     score += award.totalPoints;
     scoreEl.textContent = score;
-    addPopup(award.totalPoints, head.x, head.y, '#172619');
+    addPopup(award.totalPoints, head.x, head.y, '#b9ffd0');
     sound.food('green');
     if (award.multiplier > lastComboMultiplier) {
       sound.combo(award.multiplier);
@@ -621,9 +438,6 @@ function endGame() {
 
   running = false;
   gameOver = true;
-  menuPausedGame = false;
-  setPhoneMenu(false);
-  syncPhoneKeypad();
   finalizingRun = true;
 
   const previousBest = best;
@@ -678,9 +492,17 @@ async function finalizeGameOver(stats) {
   }
 
   overlay.classList.remove('show');
-  overlayTitle.textContent = stats.isNewBest ? 'NEW BEST!' : 'GAME OVER';
-  overlaySub.textContent = `SCORE ${stats.score} · NAVI AGAIN`;
-  overlay.classList.add('show');
+  gameOverScreen.show({
+    score: stats.score,
+    bestScore: stats.previousBest,
+    isNewBest: stats.isNewBest,
+    maxCombo: stats.maxCombo,
+    foodEaten: stats.foodEaten,
+    durationMs: stats.durationMs,
+    leaderboardStatus,
+    rank: leaderboardResult.rank,
+    shareUrl: `${location.origin}${location.pathname}`,
+  });
 }
 
 function render() {
@@ -727,7 +549,6 @@ function startGame() {
 
   resetGame();
   running = true;
-  syncPhoneKeypad();
   sound.start();
   lastStep = 0;
   overlayTitle.textContent = '';
@@ -753,7 +574,6 @@ function togglePause() {
   overlayTitle.textContent = paused ? 'Paused' : '';
   overlaySub.textContent = paused ? 'Press Space to resume' : '';
   overlay.classList.toggle('show', paused);
-  syncPhoneKeypad();
 }
 
 function handleDirection(newDir) {
@@ -766,29 +586,6 @@ function handleDirection(newDir) {
 window.addEventListener('keydown', (e) => {
   if (nameModal && nameModal.classList.contains('show')) return;
   if (gameOverScreen.isOpen()) return;
-
-  if (phoneMenuOpen) {
-    if (e.key === 'Escape' || e.key === 'Backspace') {
-      e.preventDefault();
-      handlePhoneMenuBack();
-    } else if (e.key === 'ArrowUp' || e.key === '2') {
-      e.preventDefault();
-      movePhoneMenuSelection(-1);
-    } else if (e.key === 'ArrowDown' || e.key === '8') {
-      e.preventDefault();
-      movePhoneMenuSelection(1);
-    } else if (e.key === 'Enter' || e.key === '5') {
-      e.preventDefault();
-      activatePhoneMenuSelection();
-    }
-    return;
-  }
-
-  if (e.key === 'm' || e.key === 'M') {
-    e.preventDefault();
-    setPhoneMenu(true);
-    return;
-  }
 
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
     e.preventDefault();
@@ -804,32 +601,14 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
     handleDirection({ x: 0, y: -1 });
   }
-  if (e.key === '2') {
-    handleDirection({ x: 0, y: -1 });
-  }
   if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
-    handleDirection({ x: 0, y: 1 });
-  }
-  if (e.key === '8') {
     handleDirection({ x: 0, y: 1 });
   }
   if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
     handleDirection({ x: -1, y: 0 });
   }
-  if (e.key === '4') {
-    handleDirection({ x: -1, y: 0 });
-  }
   if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
     handleDirection({ x: 1, y: 0 });
-  }
-  if (e.key === '6') {
-    handleDirection({ x: 1, y: 0 });
-  }
-  if (e.key === '5') {
-    running && !gameOver ? togglePause() : startGame();
-  }
-  if (e.key === '0') {
-    togglePause();
   }
 });
 
@@ -1008,8 +787,7 @@ function escapeHtml(value) {
 fetchLeaderboard();
 
 function resizeBoard() {
-  const availableWidth = boardWrap ? boardWrap.clientWidth : window.innerWidth * 0.92;
-  const maxSize = Math.min(availableWidth, 420);
+  const maxSize = Math.min(window.innerWidth * 0.92, 420);
   const size = Math.floor(maxSize / gridSize) * gridSize;
   canvas.width = size;
   canvas.height = size;
