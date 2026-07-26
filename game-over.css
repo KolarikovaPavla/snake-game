@@ -120,6 +120,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 34px;
   margin: 0 39px 10px 1px;
   color: #a8b4bc;
   font-size: 8px;
@@ -138,7 +139,7 @@
 }
 
 .gos-header {
-  margin-top: 16px;
+  margin-top: 0;
   padding: 18px 18px 9px;
   border: 1px solid var(--gos-lcd-dark);
   border-bottom: 0;
